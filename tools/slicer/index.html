@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<!-- 被你发现了喵~ Ciallo～(∠・ω< )⌒☆ -->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picture Slicer | 图片切片机</title>
+    
+    <!-- 引入 CSS -->
+    <link href="../../assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../../assets/css/cropper.min.css" rel="stylesheet">
+    <link href="../../assets/css/bootstrap-icons.css" rel="stylesheet">
+    <link href="../../assets/css/photo-slicer-tool.min.css" rel="stylesheet">
+
+    <!-- 自定义字体设置 -->
+    <style>
+        /* 定义 MiSans 字体 */
+        @font-face {
+            font-family: 'MiSansVF';
+            src: url('../../assets/fonts/MiSansVF.ttf') format('truetype');
+            font-weight: 100 900; /* 支持可变字重 */
+            font-display: swap;
+        }
+
+        /* 全局应用字体 */
+        body {
+            font-family: 'MiSansVF', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        }
+
+    </style>
+</head>
+<body data-theme="">
+
+<!-- 加载层 -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="text-center">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+        <p class="mt-2 fw-bold" style="color: var(--primary-color)">Processing...</p>
+    </div>
+</div>
+
+<!-- 导航栏 -->
+<nav class="navbar navbar-expand-lg sticky-top mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="bi bi-grid-3x3-gap-fill"></i> <span data-i18n="app_name">图片切片机</span>
+        </a>
+        <div class="d-flex align-items-center gap-3">
+            <!-- 主题切换 -->
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-palette"></i> <span data-i18n="theme_btn">主题</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" style="max-height: 600px; overflow-y: auto;">
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('')" data-i18n="theme_sakura">🌸 樱花粉 (Sakura)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('sky')" data-i18n="theme_sky">☁️ 天空蓝 (Sky)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('mint')" data-i18n="theme_mint">🍃 薄荷绿 (Mint)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('dark')" data-i18n="theme_dark">🌙 暗夜紫 (Dark)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('lemon')" data-i18n="theme_lemon">🍋 柠檬黄 (Lemon)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('grape')" data-i18n="theme_grape">🍇 葡萄紫 (Grape)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('peach')" data-i18n="theme_peach">🍑 蜜桃粉 (Peach)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('ocean')" data-i18n="theme_ocean">🌊 深海蓝 (Ocean)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('forest')" data-i18n="theme_forest">🌲 森林绿 (Forest)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('coffee')" data-i18n="theme_coffee">☕ 咖啡色 (Coffee)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('cyber')" data-i18n="theme_cyber">🤖 赛博朋克 (Cyber)</a></li>
+                    <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('mono')" data-i18n="theme_mono">🎹 极简黑白 (Mono)</a></li>
+                </ul>
+            </div>
+            
+            <select class="form-select form-select-sm" id="langSelect" style="width: 110px; border-radius: 20px;">
+                <option value="zh">🇨🇳 中文</option>
+                <option value="en">🇺🇸 English</option>
+            </select>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    
+    <!-- 1. 设置区域 -->
+    <div class="row">
+        <!-- 上传与图像区域 -->
+        <div class="col-lg-8">
+            <div class="acg-card p-0">
+                <div class="acg-header">
+                    <span data-i18n="editor_title">图片编辑区</span>
+                    <button class="btn btn-sm btn-light text-primary fw-bold rounded-pill" id="btnReupload" style="display:none;">
+                        <i class="bi bi-arrow-counterclockwise"></i> <span data-i18n="reupload">重新上传</span>
+                    </button>
+                </div>
+                <div class="p-3">
+                    <!-- 上传控件 -->
+                    <div id="drop-zone" class="mb-3">
+                        <div class="text-center p-4">
+                            <i class="bi bi-cloud-arrow-up" style="font-size: 4rem; color: var(--secondary-color);"></i>
+                            <p class="mb-2 fw-bold fs-5 mt-3" data-i18n="upload_hint">拖拽图片 / Ctrl+V 粘贴 / 点击上传</p>
+                            <p class="text-muted small" data-i18n="upload_sub">支持 PNG, JPG, WEBP (建议 4K 分辨率)</p>
+                            <input type="file" id="fileInput" accept="image/*" class="d-none">
+                            <button class="btn btn-acg mt-2" onclick="$('#fileInput').click()" data-i18n="btn_choose">选择文件</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Cropper 编辑器 -->
+                    <div class="img-container" id="editorContainer" style="display:none;">
+                        <img id="image" src="" alt="Picture">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="col-lg-4">
+            <div class="acg-card p-0">
+                <div class="acg-header">
+                    <span><i class="bi bi-sliders"></i> <span data-i18n="settings_title">魔法设置</span></span>
+                </div>
+                <div class="p-3">
+                    
+                    <!-- 行列设置 -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold d-flex justify-content-between">
+                            <span data-i18n="grid_layout">网格布局</span> 
+                            <span class="badge bg-secondary" id="gridDisplay">4 x 6</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light" data-i18n="rows">行</span>
+                            <input type="number" class="form-control" id="inputRows" value="4" min="1" max="20">
+                            <span class="input-group-text bg-light" data-i18n="cols">列</span>
+                            <input type="number" class="form-control" id="inputCols" value="6" min="1" max="20">
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            <span class="badge bg-secondary preset-grid" data-rows="2" data-cols="2">2x2</span>
+                            <span class="badge bg-secondary preset-grid" data-rows="3" data-cols="3">3x3</span>
+                            <span class="badge bg-secondary preset-grid" data-rows="4" data-cols="3">4x3</span>
+                            <span class="badge bg-secondary preset-grid" data-rows="4" data-cols="4">4x4</span>
+                            <span class="badge bg-secondary preset-grid" data-rows="4" data-cols="6">4x6</span>
+                            <span class="badge bg-secondary preset-grid" data-rows="5" data-cols="5">5x5</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 网格开关 -->
+                    <div class="form-check form-switch mb-1">
+                        <input class="form-check-input" type="checkbox" id="checkShowGrid" checked>
+                        <label class="form-check-label small" for="checkShowGrid" data-i18n="show_grid">显示网格预览</label>
+                    </div>
+                    <div class="row g-2 mt-1 align-items-center">
+                        <div class="col-6">
+                            <label class="form-label small mb-0 text-muted" data-i18n="grid_color">网格颜色</label>
+                            <input type="color" class="form-control form-control-color form-control-sm" id="inputGridColor" value="#000000" title="Choose grid color">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small text-muted mb-1" data-i18n="line_width">线条粗细</label>
+                            <div class="d-flex align-items-center">
+                                <input type="range" class="form-range form-range-sm me-2" id="inputGridWeight" min="1" max="10" value="1">
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-3 opacity-25">
+                    
+                    <!-- 抠图与网格 -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>
+                                <label class="form-label fw-bold mb-0" data-i18n="remove_bg">抠图设置</label>
+                                <span class="info-icon ms-1">
+                                    <i class="bi bi-info-circle text-warning"></i>
+                                    <span class="info-tooltip" data-i18n="ai_tip">此功能仅适用于纯色背景。如需完美去除复杂背景，请先使用专门的 AI 工具处理。</span>
+                                </span>
+                            </span>
+                        </div>
+
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="checkRemoveBg" checked>
+                            <label class="form-check-label" for="checkRemoveBg" data-i18n="auto_remove_bg">启用自动抠图</label>
+                        </div>
+
+                        <div id="bgSettingsPanel" class="bg-light p-2 rounded">
+                            <!-- 背景色与模式 -->
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <label class="form-label small text-muted mb-0" data-i18n="bg_color">背景颜色</label>
+                                    <i class="bi bi-info-circle text-warning small ms-1 info-icon">
+                                        <span class="info-tooltip" data-i18n="contiguous_tip">勾选连续区域：仅去除与边缘相连的背景（保护眼睛/衣服等内部颜色）。<br>不勾选：去除画面中所有与背景色相同的像素。</span>
+                                    </i>
+                                    <div class="input-group input-group-sm mt-1" style="width: 130px;">
+                                        <button class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center" type="button" id="btnPickColor" title="点击吸取颜色">
+                                            <div id="pickedColorPreview" style="width: 15px; height: 15px; background: #ffffff; border: 1px solid #999; margin-right: 8px;"></div>
+                                            <i class="bi bi-eyedropper"></i>
+                                        </button>
+                                    </div>
+                                    <!-- 隐藏的原生取色器 -->
+                                    <input type="color" id="nativeColorInput" value="#ffffff" style="visibility: hidden; position: absolute;">
+                                </div>
+                                
+                                <div class="form-check form-switch mt-3 me-2">
+                                    <input class="form-check-input" type="checkbox" id="checkBgContiguous" checked="">
+                                    <label class="form-check-label small" for="checkBgContiguous" data-i18n="contiguous_only">仅连续区域 (保护内部)</label>
+                                </div>
+                            </div>
+                        
+                            <!-- 容差值 -->
+                            <label class="form-label d-flex justify-content-between small text-muted align-items-center mt-1">
+                                <span data-i18n="tolerance">容差值</span>
+                                <!-- 只有这一个 id="toleranceVal" 的 input -->
+                                <input type="number" id="toleranceVal" class="form-control form-control-sm p-0 text-center" 
+                                    style="width: 50px; height: 24px; border: 1px solid #ced4da;" 
+                                    value="5" min="0" max="100">
+                            </label>
+                            <input type="range" class="form-range" id="inputTolerance" min="0" max="100" value="5">
+                        </div>
+
+                    <!-- 格式与质量 -->
+                    <div class="mb-3 mt-3">
+                        <span>
+                            <label class="form-label fw-bold" data-i18n="output_format">输出格式</label>
+                            <span class="info-icon ms-1">
+                                <i class="bi bi-info-circle text-warning"></i>
+                                <span class="info-tooltip" data-i18n="wx_hint">如果你想在微信里使用，最简单的方法是直接改png后缀名为gif</span>
+                            </span>
+                        </span>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <select class="form-select form-select-sm" id="formatSelect">
+                                    <option value="image/png" data-i18n="fmt_png">PNG (透明画质)</option>
+                                    <option value="image/webp" data-i18n="fmt_webp">WEBP (体积小巧)</option>
+                                </select>
+                            </div>
+                            <div class="col-6" id="qualityBox" style="display:none;">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">Q</span>
+                                    <input type="number" class="form-control" id="qualityInput" value="0.9" min="0.1" max="1.0" step="0.1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="output-resize-options">
+                        <div class="row g-2">   
+                            <div class="col-6 form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="checkMakeSquare">
+                                <label class="form-check-label small" for="checkMakeSquare" data-i18n="make_square">统一转为正方形</label>
+                            </div>
+                        
+                            <div class="col-6 form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="checkCustomSize">
+                                <label class="form-check-label small" for="checkCustomSize" data-i18n="custom_size">自定义输出尺寸（像素）</label>
+                            </div>
+                        </div>
+                        <div id="customSizePanel" class="input-group input-group-sm" style="display: none;">
+                            <span class="input-group-text" data-i18n="output_width">宽</span>
+                            <input type="number" class="form-control" id="outputWidth" placeholder="例如 240">
+                            <span class="input-group-text" data-i18n="output_height">高</span>
+                            <input type="number" class="form-control" id="outputHeight" placeholder="例如 240">
+                        </div>
+                   
+                        <p class="text-muted small mt-1">
+                            <span data-i18n="square_hint">原始切片尺寸:</span>
+                            <span id="squareDimDisplay" class="fw-bold">N/A</span>
+                        </p>
+                    </div>
+                    
+                    <!-- 动作按钮 -->
+                    <div class="d-grid gap-2 mt-3">
+                        <button class="btn btn-acg btn-lg" id="btnSlice">
+                            <i class="bi bi-lightning-charge-fill"></i> <span data-i18n="btn_generate">一键生成切片</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- 2. 结果预览区域 -->
+    <div class="row mt-4" id="resultSection" style="display:none;">
+        <div class="col-12">
+            <div class="acg-card p-0">
+                <div class="acg-header">
+                    <span>
+                        <i class="bi bi-images"></i> <span data-i18n="result_title">切片结果</span> 
+                        <span class="badge bg-light text-dark ms-2" id="resultCount">0</span>
+                    </span>
+                    <div>
+                        <button class="btn btn-light text-primary btn-sm fw-bold rounded-pill" id="btnSelectAll">
+                            <i class="bi bi-check-all"></i> <span data-i18n="select_all">全选</span>
+                        </button>
+                        <button class="btn btn-light text-primary btn-sm fw-bold rounded-pill ms-2" id="btnDownloadZip">
+                            <i class="bi bi-file-earmark-zip-fill"></i> <span data-i18n="btn_download_zip">打包下载</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-4" style="background-color: var(--bg-color);">
+                    <p class="text-muted text-center small mb-3">
+                        <i class="bi bi-hand-index-thumb"></i> <span data-i18n="interact_hint">点击选中 | 悬停按钮微调 (移动/缩放/智能居中) | 右下角单图下载</span>
+                    </p>
+                    <!-- 网格展示 -->
+                    <div class="" id="previewGrid"> 
+                        <!-- JS 动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- 页脚 -->
+<footer>
+    <div class="container">
+        <p class="mb-1">© 2025 Picture Slicer Tool. All rights reserved.</p>
+        <p class="mb-0 text-muted opacity-75">
+            <i class="bi bi-shield-lock-fill"></i> 
+            <span data-i18n="privacy_note">本工具所有处理均在本地浏览器完成，您的图片不会上传至服务器，请放心使用。</span>
+        </p>
+    </div>
+</footer>
+
+<!-- 预览与微调弹窗 (修正位置) -->
+<div class="modal fade" id="slicePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 90vw;">
+        <div class="modal-content">
+            <div class="modal-header py-2 bg-dark border-bottom border-secondary">
+                <h5 class="modal-title fs-6 text-white">切片预览与微调</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-0" style="background:#1a1a1a; position:relative; overflow:hidden;">
+                <!-- 图片容器 -->
+                <div id="slicePreviewImgContainer" class="d-flex align-items-center justify-content-center" style="height: 50vh; background-image: linear-gradient(45deg, #333 25%, transparent 25%), linear-gradient(-45deg, #333 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #333 75%), linear-gradient(-45deg, transparent 75%, #333 75%); background-size: 20px 20px; overflow: hidden; cursor: grab;">
+                    <img id="slicePreviewImg" src="" style="max-width: none; box-shadow: 0 0 20px rgba(0,0,0,0.5); transform-origin: center center;">
+                </div>
+                
+                <!-- 浮动的微调工具条 -->
+                <div id="modalNudgeTools" class="position-absolute bottom-0 start-50 translate-middle-x mb-3 d-flex gap-2 p-2 rounded" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
+                    <!-- JS 动态渲染方向键 -->
+                </div>
+            </div>
+            
+            <!-- 底部控制栏 -->
+            <div class="modal-footer py-2 bg-dark border-top border-secondary row g-0 w-100">
+                <!-- 左侧：详细信息 -->
+                <div class="col-md-3 text-light small text-start d-flex flex-column justify-content-center" style="font-family: monospace; line-height: 1.4;">
+                    <div><span class="text-muted">原始:</span> <span id="modalOrigDim">-</span></div>
+                    <div><span class="text-warning">输出:</span> <span id="modalCurrDim">-</span></div>
+                    <div><span class="text-info">预估:</span> <span id="modalFileSize">-</span> KB</div>
+                </div>
+                
+                <!-- 中间：视图缩放 -->
+                <div class="col-md-4 d-flex align-items-center justify-content-center">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary text-light" id="btnViewZoomOut" title="缩小视图"><i class="bi bi-dash-lg"></i></button>
+                        <button class="btn btn-outline-secondary text-light" id="btnViewReset" style="width: 50px;">100%</button>
+                        <button class="btn btn-outline-secondary text-light" id="btnViewZoomIn" title="放大视图"><i class="bi bi-plus-lg"></i></button>
+                    </div>
+                </div>
+
+                <!-- 右侧：抠图参数 -->
+                <div class="col-md-5 d-flex align-items-center justify-content-end gap-3">
+                    <div class="d-flex align-items-center text-light small">
+                        <label class="me-2">容差</label>
+                        <input type="range" class="form-range" id="modalToleranceInput" min="0" max="100" style="width: 80px;" value="5">
+                        <span id="modalToleranceVal" class="ms-1" style="width:25px">5</span>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="modalContiguousInput">
+                        <label class="form-check-label text-light small" for="modalContiguousInput">连续</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 脚本引入 (绝对路径) -->
+<script src="../../assets/js/jquery.min.js"></script>
+<script src="../../assets/js/bootstrap.bundle.min.js"></script>
+<script src="../../assets/js/cropper.min.js"></script>
+<script src="../../assets/js/jszip.min.js"></script>
+<script src="../../assets/js/FileSaver.min.js"></script>
+<script src="../../assets/js/photo-slicer-tool.min.js"></script>
+
+</body>
+</html>
