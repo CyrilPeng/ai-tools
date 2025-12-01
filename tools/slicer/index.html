@@ -41,11 +41,26 @@
 
 <!-- 导航栏 -->
 <nav class="navbar navbar-expand-lg sticky-top mb-4">
-    <div class="container">
-        <a class="navbar-brand" href="#">
-            <i class="bi bi-grid-3x3-gap-fill"></i> <span>图片切片机</span>
+    <!-- 关键点1：加上 position-relative，作为中间标题定位的父容器 -->
+    <div class="container position-relative">
+        
+        <!-- 1. 左侧：新增的首页按钮 -->
+        <!-- 使用 me-auto (margin-end: auto) 也可以，但在 flex 布局下直接放第一个就是左边 -->
+        <a class="btn btn-sm btn-outline-secondary rounded-pill" href="../../index.html">
+            <i class="bi bi-house-fill"></i> <span>首页</span>
         </a>
-        <div class="d-flex align-items-center gap-3">
+
+        <!-- 2. 中间：图片切片机 Logo (绝对定位居中) -->
+        <!-- position-absolute: 绝对定位 -->
+        <!-- top-50 start-50 translate-middle: 经典的 CSS 居中大法 -->
+        <a class="navbar-brand position-absolute top-50 start-50 translate-middle" href="#">
+            <i class="bi bi-grid-3x3-gap-fill text-primary"></i> 
+            <span class="fw-bold">图片切片机</span>
+        </a>
+
+        <!-- 3. 右侧：主题切换 -->
+        <!-- 关键点2：加上 ms-auto (margin-start: auto) 把这一组强制推到最右边 -->
+        <div class="d-flex align-items-center gap-3 ms-auto">
             <!-- 主题切换 -->
             <div class="dropdown">
                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown">
@@ -66,7 +81,6 @@
                     <li><a class="dropdown-item theme-btn" href="#" onclick="changeTheme('mono')">🎹 极简黑白 (Mono)</a></li>
                 </ul>
             </div>
-            <!-- 语言选择框已删除 -->
         </div>
     </div>
 </nav>
