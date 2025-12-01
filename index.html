@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大概会有点用的妙妙小工具</title>
+    <style>
+        /* --- iOS 风格基础设置 --- */
+        :root {
+            --bg-color: #F2F2F7; /* iOS 设置页面的背景灰 */
+            --card-bg: #FFFFFF;
+            --text-primary: #1C1C1E;
+            --text-secondary: #8E8E93;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --radius: 22px; /* iOS 风格大圆角 */
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased; /* 让字体更清晰 */
+        }
+
+        /* --- 顶部导航 (毛玻璃效果) --- */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(242, 242, 247, 0.8); /* 半透明背景 */
+            backdrop-filter: saturate(180%) blur(20px); /* 核心：毛玻璃模糊 */
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        /* --- 删掉原本的 .avatar 样式，换成这个 --- */
+        .github-link {
+            width: 36px;
+            height: 36px;
+            background: rgba(0, 0, 0, 0.05); /* 浅灰色背景，类似 iOS 按钮 */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            color: #1C1C1E; /* 图标颜色 */
+        }
+
+        .github-link:hover {
+            background: rgba(0, 0, 0, 0.1); /* 鼠标悬停稍微变深 */
+        }
+
+        .github-link svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor; /* 让 SVG 跟随文字颜色 */
+        }
+
+
+        /* --- 主体布局 --- */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-left: 5px;
+        }
+
+        /* --- 网格布局 --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); /* 自适应网格 */
+            gap: 20px;
+        }
+
+        /* --- 卡片样式 (类似 iOS Widget) --- */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: var(--shadow);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+            height: 180px; /* 固定高度，看起来整齐 */
+        }
+
+        /* 鼠标悬停效果 */
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 点击按压效果 */
+        .card:active {
+            transform: scale(0.96);
+        }
+
+        /* --- 图标样式 --- */
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: auto; /* 把文字推到底部 */
+        }
+
+        /* --- 文字样式 --- */
+        .card h3 {
+            margin: 0 0 5px 0;
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .card p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* 最多显示两行 */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* --- 针对不同工具定义的渐变色 --- */
+        .gradient-blue { background: linear-gradient(135deg, #007AFF, #0055B3); color: white; }
+        .gradient-orange { background: linear-gradient(135deg, #FF9500, #FF5E3A); color: white; }
+        .gradient-green { background: linear-gradient(135deg, #34C759, #30B450); color: white; }
+        .gradient-purple { background: linear-gradient(135deg, #AF52DE, #5856D6); color: white; }
+
+        /* --- 页脚 --- */
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部导航栏 -->
+    <header>
+        <h1>妙妙小工具</h1>
+        <a href="https://github.com/CyrilPeng/mytools" target="_blank" class="github-link" aria-label="GitHub Repository">
+            <!-- 这是一个 GitHub 的 SVG 图标代码 -->
+            <svg viewBox="0 0 16 16" version="1.1" aria-hidden="true">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+            </svg>
+        </a>
+    </header>
+
+    <div class="container">
+        <div class="section-title">我的工具箱</div>
+
+        <div class="grid">
+            
+            <!-- 工具 1: 图片切片 (这是你目前唯一真实的工具) -->
+            <!-- 注意 href 指向你的文件夹路径 -->
+            <a href="tools/slicer/index.html" class="card">
+                <div class="icon-box gradient-blue">
+                    ✂️
+                </div>
+                <h3>图片切片</h3>
+                <p>将长图快速切割成九宫格或多张图片。</p>
+            </a>
+<!--
+            工具 2:占位符
+            <a href="#" class="card" onclick="alert('开发中...')">
+                <div class="icon-box gradient-orange">
+                    🔠
+                </div>
+                <h3>Base64 转换</h3>
+                <p>文本与 Base64 编码快速互转。</p>
+            </a>
+
+            工具 3: 占位符
+            <a href="#" class="card" onclick="alert('开发中...')">
+                <div class="icon-box gradient-green">
+                    🔑
+                </div>
+                <h3>密码生成</h3>
+                <p>生成高强度随机密码，保障安全。</p>
+            </a>
+
+            工具 4: 占位符
+            <a href="#" class="card" onclick="alert('开发中...')">
+                <div class="icon-box gradient-purple">
+                    📄
+                </div>
+                <h3>JSON 格式化</h3>
+                <p>美化 JSON 数据，方便阅读和校验。</p>
+            </a>
+-->
+        </div>
+    </div>
+
+    <footer>
+        &copy; 2025 Cyril. Designed for Efficiency.
+    </footer>
+
+</body>
+</html>
