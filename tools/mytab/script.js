@@ -206,8 +206,9 @@ function renderGrid(sites, filterText = "") {
                     <img src="${site.content}"> 
                 </div>`;
         } else {
-            // 在线图标逻辑 - 优先使用已保存的 content
-            // 如果 content 为空（旧数据兼容），则临时计算
+            // [重点] 在线图标逻辑
+            // 1. 优先尝试使用已经保存的 content (这是解决每次刷新都获取的关键)
+            // 2. 如果 content 为空 (旧数据)，则使用 domain 自动推导
             let imgSrc = site.content;
             const domain = getDomain(site.url);
             
@@ -215,7 +216,7 @@ function renderGrid(sites, filterText = "") {
                 imgSrc = `https://api.iowen.cn/favicon/${domain}.png`;
             }
             
-            // 备用图标（如果主图标挂了）
+            // 备用图标（如果主图标挂了，用 Google API）
             const fallbackIconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
             
             iconHtml = `
@@ -234,10 +235,10 @@ function renderGrid(sites, filterText = "") {
                 const fallback = this.getAttribute('data-fallback');
                 
                 // 如果当前图片加载失败，且还没试过 fallback，则尝试 fallback
-                if (currentSrc !== fallback) {
+                if (currentSrc !== fallback && fallback) {
                     this.src = fallback;
                 } else {
-                    // 彻底失败，显示文字或隐藏
+                    // 彻底失败，显示文字代替
                     this.style.display = 'none';
                     this.parentNode.innerHTML = `<span>${site.name.substring(0,1)}</span>`;
                     this.parentNode.style.backgroundColor = '#ccc';
@@ -772,24 +773,21 @@ function initDrawer() {
 
     // 绑定输入事件以实时预览
     const drawerUrl = document.getElementById('drawerUrl');
-    const customIconUrl = document.getElementById('customIconUrl'); // 自定义图标输入框
+    const customIconUrl = document.getElementById('customIconUrl'); 
     const drawerIconText = document.getElementById('drawerIconText');
     const drawerName = document.getElementById('drawerName');
     const fetchIconBtn = document.getElementById('fetchIconBtn'); 
 
-    // 网站URL变化时，如果是在线模式，尝试获取在线图标
     drawerUrl.addEventListener('input', () => {
         if(tempIconData.type === 'online') updatePreview();
     });
 
-    // 自定义图标URL变化时，立即刷新预览
     if (customIconUrl) {
         customIconUrl.addEventListener('input', () => {
              if(tempIconData.type === 'online') updatePreview();
         });
     }
 
-    // 点击“获取图标”按钮，强制刷新预览
     if (fetchIconBtn) {
         fetchIconBtn.onclick = () => {
             if (tempIconData.type === 'online') {
@@ -871,10 +869,8 @@ function openDrawer(isEdit, index = -1) {
         tempIconData.content = site.content || ''; 
         tempIconData.bgColor = site.bgColor || '#FF9C9C';
         
-        // 如果是在线图标，且有内容，回填到输入框
-        // 注意：现在 content 可能存的是自动生成的 API 链接，也可能是用户自定义的链接
-        // 我们尽量只在看起来像自定义链接时回填，或者全部回填
-        if (tempIconData.type === 'online' && tempIconData.content && customIconUrl) {
+        if (tempIconData.type === 'online' && customIconUrl) {
+            // 如果有内容，回填到自定义输入框
             customIconUrl.value = tempIconData.content;
         }
 
@@ -906,7 +902,6 @@ function closeDrawer() {
     }, 300);
 }
 
-// [核心修改] 预览逻辑：智能检测输入的是图片链接还是网页地址
 function updatePreview() {
     const drawerUrl = document.getElementById('drawerUrl');
     const customIconUrl = document.getElementById('customIconUrl');
@@ -916,7 +911,6 @@ function updatePreview() {
     const previewImg = document.getElementById('previewImg');
     const previewText = document.getElementById('previewText');
 
-    // 重置样式
     previewBox.style.backgroundColor = 'rgba(255,255,255,0.9)';
     previewBox.style.color = '#333';
     previewImg.style.display = 'none';
@@ -927,29 +921,14 @@ function updatePreview() {
         const customVal = customIconUrl ? customIconUrl.value.trim() : "";
         const urlVal = drawerUrl.value.trim();
 
-        // 优先级 1: 自定义图标地址 (用户在图标栏输入了内容)
         if (customVal) {
-            // 尝试直接显示该链接（假设是图片）
             previewImg.src = customVal;
             previewImg.style.display = 'block';
-            
-            // [核心修改] 如果图片加载失败（说明不是直接图片链接，可能是普通网页），尝试提取域名调用API
             previewImg.onerror = function() {
-                const domain = getDomain(customVal); // 尝试从输入框提取域名
-                if(domain) {
-                    // 尝试使用 API 加载
-                    this.src = `https://api.iowen.cn/favicon/${domain}.png`;
-                    this.onerror = function() { // 如果 API 也失败
-                        this.style.display = 'none';
-                        previewText.textContent = '?';
-                    }
-                } else {
-                    this.style.display = 'none';
-                    previewText.textContent = '?';
-                }
+                this.style.display = 'none';
+                previewText.textContent = '?';
             };
         } 
-        // 优先级 2: 根据网站地址自动获取
         else if (urlVal) {
             const domain = getDomain(urlVal);
             if(domain) {
@@ -980,28 +959,27 @@ function updatePreview() {
     }
 }
 
-// [核心修改] 保存逻辑：将计算好的图标地址直接保存到 content，避免首页重复计算
+// [核心修改] 保存逻辑：在保存时就计算好图标 URL 并存入 content
 function saveDrawerData() {
     if(!appData) return;
     const drawerUrl = document.getElementById('drawerUrl');
     const drawerName = document.getElementById('drawerName');
     const customIconUrl = document.getElementById('customIconUrl');
-    const previewImg = document.getElementById('previewImg'); // 获取预览图，它现在的 src 就是最终确认可用的链接
-
+    
     const name = drawerName.value.trim();
     let url = drawerUrl.value.trim();
 
     if (!name || !url) return alert("请填写名称和网址");
     if (!url.startsWith('http')) url = 'https://' + url;
 
-    // 在线图标处理
+    // [重点] 确保保存的内容是具体的 URL 字符串
     if (tempIconData.type === 'online') {
-        // 如果预览图正在显示，说明我们已经找到了一个有效的链接（无论是直接图片还是API生成的）
-        // 直接保存预览图的 src，这样首页加载时就不用再算一次了
-        if (previewImg.style.display !== 'none' && previewImg.src) {
-            tempIconData.content = previewImg.src;
+        const customVal = customIconUrl ? customIconUrl.value.trim() : "";
+        if (customVal) {
+            // 如果用户填了自定义图标，就保存自定义的
+            tempIconData.content = customVal;
         } else {
-            // 如果预览都没出来，给一个保底的 API 链接
+            // 否则，自动生成 API 链接并保存，而不是保存空字符串
             const domain = getDomain(url);
             tempIconData.content = `https://api.iowen.cn/favicon/${domain}.png`;
         }
@@ -1015,7 +993,6 @@ function saveDrawerData() {
         bgColor: tempIconData.bgColor
     };
 
-    // 如果是纯色且没填文字，自动取名字前两个字
     if (newSite.type === 'solid' && !newSite.content) {
         newSite.content = name.substring(0, 2);
     }
