@@ -29,7 +29,7 @@ const defaultData = {
     activeCatIndex: 0,
     bgType: "img", 
     bgValue: "https://4kwallpapers.com/images/walls/thumbs_3t/18741.png",
-    openTarget: "_blank", // 新增：默认新标签页打开
+    openTarget: "_blank",
     webdav: { url: "", user: "", pass: "" },
     categories: [
         { name: "主页", icon: "bi-house-door", sites: [
@@ -59,7 +59,12 @@ let tempIconData = { type: 'online', content: '', bgColor: '' };
 let sidebarContextMenuIndex = -1;
 let sidebarEditingIndex = -1;
 let tempSidebarIcon = "";
-let cropper = null; // Cropper实例
+let cropper = null; 
+
+// 拖拽相关全局变量
+let dragSrcEl = null;
+let dragType = null; // 'sidebar' | 'grid'
+let dragSrcIndex = -1;
 
 const grid = document.getElementById('grid');
 const sidebarList = document.getElementById('sidebarList');
@@ -79,7 +84,7 @@ function getDomain(url) {
     }
 }
 
-// --- 辅助函数：图片 URL 转 Base64 (用于缓存) ---
+// --- 辅助函数：图片 URL 转 Base64 ---
 async function urlToBase64(url) {
     try {
         const response = await fetch(url);
@@ -92,7 +97,7 @@ async function urlToBase64(url) {
         });
     } catch (error) {
         console.error("Icon cache failed:", error);
-        return null; // 如果下载失败，返回 null，后续逻辑会回退到使用 URL
+        return null;
     }
 }
 
@@ -123,17 +128,15 @@ function loadData() {
     if(chrome.storage && chrome.storage.local) {
         chrome.storage.local.get(['myTabData'], (res) => {
             appData = res.myTabData || JSON.parse(JSON.stringify(defaultData));
-            // 兼容性处理
             if(!appData.categories) appData.categories = defaultData.categories;
             if(!appData.customEngines) appData.customEngines = []; 
             if(!appData.bgType) appData.bgType = 'img';
-            if(appData.openTarget === undefined) appData.openTarget = "_blank"; // 默认值
+            if(appData.openTarget === undefined) appData.openTarget = "_blank";
             
             renderUI();
             initSearch(); 
         });
     } else {
-        // 本地调试用
         const localStr = localStorage.getItem('myTabData');
         appData = localStr ? JSON.parse(localStr) : JSON.parse(JSON.stringify(defaultData));
         renderUI();
@@ -183,6 +186,9 @@ function renderSidebar() {
     appData.categories.forEach((cat, index) => {
         const item = document.createElement('div');
         item.className = `sidebar-item ${index === appData.activeCatIndex ? 'active' : ''}`;
+        // 启用拖拽
+        item.setAttribute('draggable', 'true');
+        item.dataset.index = index;
         
         let iconHtml = '';
         if (cat.icon && cat.icon.startsWith('bi-')) {
@@ -207,6 +213,9 @@ function renderSidebar() {
             showSidebarContextMenu(e, index);
         };
 
+        // 侧边栏拖拽事件绑定
+        addSidebarDragEvents(item, index);
+
         sidebarList.appendChild(item);
     });
 
@@ -230,6 +239,9 @@ function renderGrid(sites, filterText = "") {
         const realIndex = sites.indexOf(site); 
         const div = document.createElement('div');
         div.className = 'app-icon';
+        // 启用拖拽
+        div.setAttribute('draggable', 'true');
+        div.dataset.index = realIndex;
         
         let iconHtml = '';
         
@@ -239,20 +251,16 @@ function renderGrid(sites, filterText = "") {
                     <span>${site.content || site.name.substring(0,2)}</span>
                 </div>`;
         } else {
-            // type 'local' or 'online' with cached base64 both behave here
             let imgSrc = site.content;
             const domain = getDomain(site.url);
-            
-            // 如果内容为空，尝试构建在线链接作为fallback（针对旧数据）
             if (!imgSrc && site.type === 'online') {
                 imgSrc = `https://api.iowen.cn/favicon/${domain}.png`;
             }
-            
             const fallbackIconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
             
             iconHtml = `
                 <div class="icon-box">
-                    <img src="${imgSrc}" data-fallback="${fallbackIconUrl}">
+                    <img src="${imgSrc}" data-fallback="${fallbackIconUrl}" draggable="false">
                 </div>`;
         }
 
@@ -263,7 +271,6 @@ function renderGrid(sites, filterText = "") {
             img.onerror = function() {
                 const currentSrc = this.src;
                 const fallback = this.getAttribute('data-fallback');
-                // 避免 fallback 死循环
                 if (currentSrc !== fallback && fallback && !currentSrc.startsWith('data:')) {
                     this.src = fallback;
                 } else {
@@ -275,7 +282,6 @@ function renderGrid(sites, filterText = "") {
             };
         }
 
-        // 修改：根据设置决定打开方式
         div.onclick = () => {
             let url = site.url.startsWith('http') ? site.url : `https://${site.url}`;
             if (appData.openTarget === '_self') {
@@ -291,6 +297,9 @@ function renderGrid(sites, filterText = "") {
             showContextMenu(e, realIndex);
         });
 
+        // 网格拖拽事件绑定
+        addGridDragEvents(div, realIndex);
+
         grid.appendChild(div);
     });
 
@@ -302,6 +311,134 @@ function renderGrid(sites, filterText = "") {
         grid.appendChild(addBtn);
     }
 }
+
+// --- 拖拽逻辑实现 ---
+
+function addSidebarDragEvents(item, index) {
+    item.addEventListener('dragstart', (e) => {
+        dragSrcEl = item;
+        dragType = 'sidebar';
+        dragSrcIndex = index;
+        e.dataTransfer.effectAllowed = 'move';
+        item.classList.add('dragging');
+    });
+
+    item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('drag-over'));
+        dragSrcEl = null;
+        dragType = null;
+    });
+
+    item.addEventListener('dragenter', (e) => {
+        item.classList.add('drag-over');
+    });
+
+    item.addEventListener('dragleave', (e) => {
+        item.classList.remove('drag-over');
+    });
+
+    item.addEventListener('dragover', (e) => {
+        e.preventDefault(); // 允许放置
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    });
+
+    item.addEventListener('drop', (e) => {
+        e.stopPropagation();
+        item.classList.remove('drag-over');
+        
+        // 1. 侧边栏排序逻辑
+        if (dragType === 'sidebar' && dragSrcEl !== item) {
+            const dragIndex = dragSrcIndex;
+            const dropIndex = index;
+            
+            // 交换数组位置
+            const temp = appData.categories[dragIndex];
+            appData.categories.splice(dragIndex, 1);
+            appData.categories.splice(dropIndex, 0, temp);
+            
+            // 修正 activeCatIndex
+            if (appData.activeCatIndex === dragIndex) {
+                appData.activeCatIndex = dropIndex;
+            } else {
+                // 如果当前选中的不是被拖动的，可能需要跟随位移，这里简化处理：
+                // 如果当前页面是A，把B插到A前面，A的索引会+1
+                if (dragIndex < appData.activeCatIndex && dropIndex >= appData.activeCatIndex) {
+                    appData.activeCatIndex--;
+                } else if (dragIndex > appData.activeCatIndex && dropIndex <= appData.activeCatIndex) {
+                    appData.activeCatIndex++;
+                }
+            }
+            
+            saveData();
+            return;
+        }
+
+        // 2. 接收从网格拖来的图标 (移动图标到该分类)
+        if (dragType === 'grid') {
+            if (index === appData.activeCatIndex) return; // 拖到自己当前分类无意义
+
+            const sourceSite = appData.categories[appData.activeCatIndex].sites[dragSrcIndex];
+            if (sourceSite) {
+                // 添加到目标分类
+                appData.categories[index].sites.push(sourceSite);
+                // 从原分类移除
+                appData.categories[appData.activeCatIndex].sites.splice(dragSrcIndex, 1);
+                saveData();
+            }
+        }
+    });
+}
+
+function addGridDragEvents(item, index) {
+    item.addEventListener('dragstart', (e) => {
+        dragSrcEl = item;
+        dragType = 'grid';
+        dragSrcIndex = index;
+        e.dataTransfer.effectAllowed = 'move';
+        item.style.opacity = '0.4';
+    });
+
+    item.addEventListener('dragend', () => {
+        item.style.opacity = '1';
+        document.querySelectorAll('.app-icon').forEach(el => el.classList.remove('drag-over'));
+        dragSrcEl = null;
+        dragType = null;
+    });
+
+    item.addEventListener('dragenter', () => {
+        if(dragType === 'grid') item.classList.add('drag-over');
+    });
+
+    item.addEventListener('dragleave', () => {
+        item.classList.remove('drag-over');
+    });
+
+    item.addEventListener('dragover', (e) => {
+        if(dragType === 'grid') {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+    });
+
+    item.addEventListener('drop', (e) => {
+        e.stopPropagation();
+        if (dragType === 'grid' && dragSrcEl !== item) {
+            const dragIndex = dragSrcIndex;
+            const dropIndex = index;
+            
+            // 在同一分类下交换位置
+            const sites = appData.categories[appData.activeCatIndex].sites;
+            const temp = sites[dragIndex];
+            sites.splice(dragIndex, 1);
+            sites.splice(dropIndex, 0, temp);
+            
+            saveData();
+        }
+    });
+}
+
 
 // --- 5. 侧边栏 & 网格交互 ---
 function initSidebarContextMenu() {
@@ -620,7 +757,6 @@ function initSettings() {
         settingsBtn.onclick = () => {
             if (!appData) return; 
             
-            // 初始化壁纸设置数据
             const isColor = appData.bgType === 'color';
             const bgRadio = document.querySelector(`input[name="bgType"][value="${isColor ? 'color' : 'img'}"]`);
             if(bgRadio) bgRadio.checked = true;
@@ -630,18 +766,15 @@ function initSettings() {
             if (isColor) document.getElementById('bgColorInput').value = appData.bgValue;
             else document.getElementById('bgInput').value = appData.bgValue;
 
-            // 初始化WebDAV数据
             if(appData.webdav) {
                 document.getElementById('davUrl').value = appData.webdav.url || "";
                 document.getElementById('davUser').value = appData.webdav.user || "";
                 document.getElementById('davPass').value = appData.webdav.pass || "";
             }
 
-            // 修改：初始化打开方式显示
             const targetValueSpan = document.getElementById('openTargetValue');
             targetValueSpan.innerText = (appData.openTarget === '_self') ? '当前标签页' : '新标签页';
 
-            // 默认显示第一个Tab
             document.querySelector('.nav-item[data-target="set-general"]').click();
             modal.style.display = 'flex';
         };
@@ -649,7 +782,6 @@ function initSettings() {
 
     closeBtn.onclick = () => modal.style.display = 'none';
 
-    // Tab 切换逻辑
     document.querySelectorAll('.nav-item').forEach(item => {
         item.onclick = () => {
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
@@ -663,25 +795,20 @@ function initSettings() {
         };
     });
 
-    // 修改：打开方式切换逻辑
     const openTargetControl = document.getElementById('openTargetControl');
     if(openTargetControl) {
         openTargetControl.onclick = () => {
-            // 切换状态
             if (appData.openTarget === '_blank') {
                 appData.openTarget = '_self';
             } else {
                 appData.openTarget = '_blank';
             }
-            // 更新UI
             const targetValueSpan = document.getElementById('openTargetValue');
             targetValueSpan.innerText = (appData.openTarget === '_self') ? '当前标签页' : '新标签页';
-            // 保存
             saveData();
         };
     }
 
-    // 壁纸类型切换
     document.querySelectorAll('input[name="bgType"]').forEach(radio => {
         radio.onchange = (e) => {
             const isColor = e.target.value === 'color';
@@ -701,7 +828,6 @@ function initSettings() {
         }
     };
 
-    // 备份逻辑
     document.getElementById('exportLocalBtn').onclick = () => {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
         const a = document.createElement('a');
@@ -727,7 +853,6 @@ function initSettings() {
         reader.readAsText(file);
     };
 
-    // WebDAV 逻辑
     const davMsg = document.getElementById('davMsg');
     const getDav = () => ({
         url: document.getElementById('davUrl').value,
@@ -812,7 +937,6 @@ function initDrawer() {
         colorGrid.appendChild(d);
     });
 
-    // 本地上传逻辑修改：打开裁剪
     const uploadArea = document.getElementById('uploadArea');
     const localFileInput = document.getElementById('localFileInput');
     
@@ -822,9 +946,8 @@ function initDrawer() {
         if (file) {
             const reader = new FileReader();
             reader.onload = (evt) => {
-                // 打开裁剪模态框
                 openCropper(evt.target.result);
-                localFileInput.value = ''; // 清空input防止重复选择不触发
+                localFileInput.value = ''; 
             };
             reader.readAsDataURL(file);
         }
@@ -832,7 +955,6 @@ function initDrawer() {
 
     document.getElementById('saveDrawerBtn').onclick = saveDrawerData;
 
-    // 裁剪相关事件绑定
     document.getElementById('cancelCropBtn').onclick = () => {
         document.getElementById('cropperModal').style.display = 'none';
         if (cropper) cropper.destroy();
@@ -840,24 +962,20 @@ function initDrawer() {
 
     document.getElementById('confirmCropBtn').onclick = () => {
         if (!cropper) return;
-        // 获取裁剪后的 Canvas
         const canvas = cropper.getCroppedCanvas({
-            width: 256, // 限制最大尺寸，避免 Base64 过大
+            width: 256, 
             height: 256
         });
         const base64Url = canvas.toDataURL('image/png');
         
-        // 更新数据和预览
         tempIconData.content = base64Url;
         updatePreview();
         
-        // 关闭裁剪框
         document.getElementById('cropperModal').style.display = 'none';
         cropper.destroy();
     };
 }
 
-// --- 9. 裁剪功能实现 ---
 function openCropper(imageSrc) {
     const modal = document.getElementById('cropperModal');
     const image = document.getElementById('cropperImage');
@@ -869,10 +987,9 @@ function openCropper(imageSrc) {
         cropper.destroy();
     }
 
-    // 初始化 Cropper.js
     cropper = new Cropper(image, {
-        aspectRatio: 1, // 1:1 正方形裁剪
-        viewMode: 1,    // 限制裁剪框不超过图片
+        aspectRatio: 1, 
+        viewMode: 1,   
         autoCropArea: 0.8,
         background: false,
         zoomable: true
@@ -953,7 +1070,6 @@ function updatePreview() {
         let useFallback = false;
         const domain = getDomain(urlVal);
 
-        // 编辑模式下，如果已有缓存内容且 URL 未变（或只是预览），优先显示缓存
         if (tempIconData.content && tempIconData.content.startsWith('data:')) {
             targetSrc = tempIconData.content;
         } else if (urlVal && domain) {
@@ -993,7 +1109,6 @@ function updatePreview() {
     }
 }
 
-// 修改：异步函数，处理图片缓存
 async function saveDrawerData() {
     if(!appData) return;
     const drawerUrl = document.getElementById('drawerUrl');
@@ -1006,21 +1121,17 @@ async function saveDrawerData() {
     if (!name || !url) return alert("请填写名称和网址");
     if (!url.startsWith('http')) url = 'https://' + url;
 
-    // 禁用按钮防止重复点击
     saveBtn.innerText = "处理中...";
     saveBtn.disabled = true;
 
-    // 如果是在线图标，尝试获取并转换为 Base64
     if (tempIconData.type === 'online') {
         const domain = getDomain(url);
-        // 如果已经是Base64（比如编辑没改动），就不重新下载了
         if (!tempIconData.content || !tempIconData.content.startsWith('data:')) {
             const apiUrl = `https://api.iowen.cn/favicon/${domain}.png`;
             const base64 = await urlToBase64(apiUrl);
             if (base64) {
                 tempIconData.content = base64;
             } else {
-                // 如果下载失败（可能是CORS或网络问题），回退到 URL
                 tempIconData.content = apiUrl;
             }
         }
@@ -1041,7 +1152,6 @@ async function saveDrawerData() {
 
     saveData();
     
-    // 恢复按钮状态
     saveBtn.innerText = "完成";
     saveBtn.disabled = false;
     

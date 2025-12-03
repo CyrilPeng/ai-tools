@@ -11,12 +11,26 @@ body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; height: 100vh; ov
 
 /* --- 2. 侧边栏 --- */
 .sidebar { 
-    position: fixed; left: 15px; top: 50%; transform: translateY(-50%);
-    width: 80px; max-height: 85vh;
-    background: rgba(30, 30, 30, 0.65); backdrop-filter: blur(20px); 
-    border-radius: 40px; display: flex; flex-direction: column; 
-    padding: 20px 0; border: 1px solid rgba(255,255,255,0.1); 
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); z-index: 500;
+    /* 1. 设定定位轴线 */
+    position: fixed; 
+    left: 50px;  /* 距离左边 50px 的位置作为中心轴 */
+    top: 50%; 
+    
+    /* 2. 使用 translate 同时修正 X轴 和 Y轴 */
+    /* -50% -50% 表示：向左移动自身宽度的50%，向上移动自身高度的50% */
+    transform: translate(-50%, -50%);
+    
+    width: 60px; 
+    max-height: 80vh;
+    background: rgba(30, 30, 30, 0.65); 
+    backdrop-filter: blur(20px); 
+    border-radius: 40px; 
+    display: flex; 
+    flex-direction: column; 
+    padding: 20px 0; 
+    border: 1px solid rgba(255,255,255,0.1); 
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); 
+    z-index: 500;
 }
 .sidebar-scroll-area { overflow-y: auto; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 15px; scrollbar-width: none; }
 .sidebar-scroll-area::-webkit-scrollbar { display: none; }
@@ -33,10 +47,28 @@ body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; height: 100vh; ov
 
 /* --- 3. 浮动设置按钮 --- */
 .floating-settings-btn {
-    position: fixed; bottom: 30px; left: 30px; width: 40px; height: 40px;
-    border-radius: 50%; background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(10px);
-    display: flex; justify-content: center; align-items: center; cursor: pointer;
-    color: rgba(255,255,255,0.7); font-size: 20px; transition: 0.3s; z-index: 600;
+    /* 1. 设定相同的定位轴线 */
+    position: fixed; 
+    bottom: 20px; 
+    left: 50px; /* 同样设定为 50px */
+    
+    /* 2. 修正 X轴 */
+    /* 向左移动自身宽度的 50%，实现居中 */
+    transform: translateX(-50%);
+    
+    width: 40px; 
+    height: 40px;
+    border-radius: 50%; 
+    background: rgba(0, 0, 0, 0.3); 
+    backdrop-filter: blur(10px);
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    cursor: pointer;
+    color: rgba(255,255,255,0.7); 
+    font-size: 20px; 
+    transition: 0.3s; 
+    z-index: 600;
     border: 1px solid rgba(255,255,255,0.05);
 }
 .floating-settings-btn:hover { background: rgba(0, 0, 0, 0.6); color: white; transform: rotate(90deg); }
@@ -222,3 +254,20 @@ input:checked + .slider:before { transform: translateX(20px); }
 .s-icon-item { width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; border-radius: 8px; cursor: pointer; color: #888; background: rgba(255,255,255,0.05); }
 .s-icon-item:hover { background: rgba(255,255,255,0.1); color: white; }
 .s-icon-item.selected { background: #007aff; color: white; }
+
+/* --- 11. 拖拽样式 --- */
+.sidebar-item.dragging, .app-icon.dragging {
+    opacity: 0.5;
+}
+
+.sidebar-item.drag-over {
+    background: rgba(0, 122, 255, 0.4) !important;
+    transform: scale(1.05);
+}
+
+.app-icon.drag-over {
+    transform: scale(1.1);
+}
+.app-icon.drag-over .icon-box {
+    box-shadow: 0 0 0 3px #007aff;
+}
