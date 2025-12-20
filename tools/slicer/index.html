@@ -5,26 +5,676 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Picture Slicer | 图片切片工具</title>
-    
+    <!-- 引入 Google Fonts: Noto Sans SC (思源黑体) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@100..900&display=swap" rel="stylesheet">
     <!-- 引入 CSS -->
-    <link href="../../assets/css/bootstrap.min.css" rel="stylesheet">
-    <link href="../../assets/css/cropper.min.css" rel="stylesheet">
-    <link href="../../assets/css/bootstrap-icons.css" rel="stylesheet">
-    <link href="photo-slicer-tool.min.css" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Cropper.js CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <!-- 自定义字体设置 -->
     <style>
-        /* 定义 MiSans 字体 */
-        @font-face {
-            font-family: 'MiSansVF';
-            src: url('../../assets/fonts/MiSansVF.ttf') format('truetype');
-            font-weight: 100 900; /* 支持可变字重 */
-            font-display: swap;
-        }
 
         /* 全局应用字体 */
         body {
-            font-family: 'MiSansVF', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            font-family: 'Noto Sans SC', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        }
+
+        :root {
+            --primary-color: #ff9eb5;
+            --secondary-color: #a0c4ff;
+            --bg-color: #fff0f5;
+            --card-bg: #fff;
+            --text-color: #555
+        }
+
+        [data-theme=sky] {
+            --primary-color: #4facfe;
+            --secondary-color: #f6d365;
+            --bg-color: #e0f2f1;
+            --card-bg: #fff
+        }
+
+        [data-theme=mint] {
+            --primary-color: #00b894;
+            --secondary-color: #fdcb6e;
+            --bg-color: #f0fdf4;
+            --card-bg: #fff
+        }
+
+        [data-theme=dark] {
+            --primary-color: #bb86fc;
+            --secondary-color: #03dac6;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0
+        }
+
+        [data-theme=lemon] {
+            --primary-color: #f9ca24;
+            --secondary-color: #f0932b;
+            --bg-color: #fffde7;
+            --card-bg: #fff
+        }
+
+        [data-theme=grape] {
+            --primary-color: #6c5ce7;
+            --secondary-color: #a29bfe;
+            --bg-color: #f3e5f5;
+            --card-bg: #fff
+        }
+
+        [data-theme=peach] {
+            --primary-color: #ff7675;
+            --secondary-color: #fab1a0;
+            --bg-color: #fff0e6;
+            --card-bg: #fff
+        }
+
+        [data-theme=ocean] {
+            --primary-color: #0984e3;
+            --secondary-color: #74b9ff;
+            --bg-color: #e3f2fd;
+            --card-bg: #fff
+        }
+
+        [data-theme=forest] {
+            --primary-color: #218c74;
+            --secondary-color: #33d9b2;
+            --bg-color: #e8f5e9;
+            --card-bg: #fff
+        }
+
+        [data-theme=coffee] {
+            --primary-color: #cd6133;
+            --secondary-color: #d35400;
+            --bg-color: #fbeee6;
+            --card-bg: #fff
+        }
+
+        [data-theme=cyber] {
+            --primary-color: #f05;
+            --secondary-color: #0fc;
+            --bg-color: #050510;
+            --card-bg: #101020;
+            --text-color: #0fc
+        }
+
+        [data-theme=mono] {
+            --primary-color: #2d3436;
+            --secondary-color: #636e72;
+            --bg-color: #f5f6fa;
+            --card-bg: #fff
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: Fredoka,Noto Sans SC,sans-serif;
+            color: var(--text-color);
+            transition: background-color .3s,color .3s;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh
+        }
+
+        .navbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 15px rgba(0,0,0,.1);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            transition: background-color .3s
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color)!important;
+            font-size: 1.5rem
+        }
+
+        .acg-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 20px rgba(0,0,0,.05);
+            border: 2px solid hsla(0,0%,100%,.1);
+            transition: transform .2s,background-color .3s;
+            margin-bottom: 20px;
+            overflow: hidden
+        }
+
+        .acg-header {
+            background: linear-gradient(90deg,var(--secondary-color),var(--primary-color));
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .acg-header,.btn-acg {
+            color: #fff;
+            font-weight: 600
+        }
+
+        .btn-acg {
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 50px;
+            padding: 10px 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,.1);
+            transition: all .3s
+        }
+
+        .btn-acg:hover {
+            background-color: var(--secondary-color);
+            transform: scale(1.05);
+            color: #fff
+        }
+
+        #drop-zone {
+            border: 3px dashed var(--secondary-color);
+            border-radius: var(--border-radius);
+            background-color: hsla(0,0%,50%,.05);
+            transition: all .3s;
+            cursor: pointer;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center
+        }
+
+        #drop-zone.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(var(--primary-color),.1)
+        }
+
+        .img-container {
+            max-height: 60vh;
+            width: 100%;
+            background-color: #333;
+            border-radius: var(--border-radius);
+            overflow: hidden
+        }
+
+        .cropper-view-box {
+            display: block;
+            overflow: hidden;
+            outline: none!important;
+            --line-w: 1px;
+            --grid-w: 25%;
+            --grid-h: 25%;
+            --c: #fff
+        }
+
+        .cropper-view-box:after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .2s;
+            z-index: 3;
+            box-shadow: inset 0 0 0 var(--line-w) var(--c);
+            background-image: linear-gradient(90deg,var(--c) var(--line-w),transparent var(--line-w)),linear-gradient(180deg,var(--c) var(--line-w),transparent var(--line-w));
+            background-size: var(--grid-w) var(--grid-h);
+            background-position: 0 0
+        }
+
+        .cropper-view-box.show-grid:after {
+            opacity: 1
+        }
+
+        .slice-card {
+            background: var(--card-bg);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,.05);
+            text-align: center;
+            transition: all .2s;
+            position: relative;
+            cursor: pointer
+        }
+
+        .slice-card.selected {
+            border-color: var(--primary-color);
+            background-color: rgba(var(--primary-color),.05);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,.1)
+        }
+
+        .slice-card .check-mark {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 12px;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1
+        }
+
+        .slice-card.selected .check-mark {
+            display: flex
+        }
+
+        .slice-img-wrapper {
+            overflow: hidden;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            position: relative
+        }
+
+        .slice-card img {
+            max-width: 100%;
+            height: auto;
+            background-image: url('data:image/svg+xml;utf8,<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="10" height="10" fill="%23eee"/><rect x="10" y="10" width="10" height="10" fill="%23ccc"/></svg>');
+            transition: transform .3s ease
+        }
+
+        .slice-card input {
+            font-size: .8rem;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,.1);
+            border-radius: 6px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            width: 100%
+        }
+
+        #slicePreviewImgContainer:hover img,.slice-img-wrapper:hover img {
+            transform: scale(1.5)
+        }
+
+        #previewGrid {
+            display: grid;
+            gap: 10px;
+            width: 100%
+        }
+
+        #previewGrid>.col {
+            width: auto!important;
+            flex: none
+        }
+
+        .info-icon {
+            position: relative;
+            cursor: help
+        }
+
+        .info-tooltip {
+            visibility: hidden;
+            width: 200px;
+            background-color: rgba(0,0,0,.8);
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 4;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity .3s;
+            font-size: .75rem;
+            font-weight: 400;
+            line-height: 1.2;
+            pointer-events: none
+        }
+
+        .info-tooltip:after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: 5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0,0,0,.8) transparent transparent
+        }
+
+        .info-icon:hover .info-tooltip {
+            visibility: visible;
+            opacity: 1
+        }
+
+        .preset-grid {
+            cursor: pointer;
+            transition: background-color .2s
+        }
+
+        .preset-grid:hover {
+            background-color: var(--primary-color)!important
+        }
+
+        .nudge-tools {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 2px;
+            margin-bottom: 5px;
+            opacity: 0;
+            transition: .2s
+        }
+
+        .slice-card:hover .nudge-tools {
+            opacity: 1
+        }
+
+        .btn-nudge {
+            width: 20px;
+            height: 20px;
+            padding: 0;
+            font-size: 10px;
+            line-height: 1;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background: #fff;
+            color: #555
+        }
+
+        .btn-nudge:hover {
+            background: var(--primary-color);
+            color: #fff;
+            border-color: var(--primary-color)
+        }
+
+        .btn-preview-slice {
+            background: #6c757d;
+            color: #fff;
+            border: 1px solid #6c757d;
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            font-size: 12px;
+            line-height: 1;
+            border-radius: 4px;
+            margin-right: 4px
+        }
+
+        .btn-preview-slice:hover {
+            background: #5a6268;
+            transform: scale(1.1)
+        }
+
+        #slicePreviewModal .modal-content {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            border: 1px solid #333
+        }
+
+        #slicePreviewModal .modal-header {
+            border-bottom-color: #333
+        }
+
+        #slicePreviewModal .modal-footer {
+            border-top-color: #333
+        }
+
+        #slicePreviewModal .btn-close {
+            filter: invert(1)
+        }
+
+        #slicePreviewImgContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+            background-image: linear-gradient(45deg,#2a2a2a 25%,transparent 0),linear-gradient(-45deg,#2a2a2a 25%,transparent 0),linear-gradient(45deg,transparent 75%,#2a2a2a 0),linear-gradient(-45deg,transparent 75%,#2a2a2a 0);
+            background-size: 20px 20px;
+            background-position: 0 0,0 10px,10px -10px,-10px 0;
+            border-radius: 4px;
+            overflow: hidden
+        }
+
+        #slicePreviewImg {
+            max-width: 100%;
+            max-height: 60vh;
+            box-shadow: 0 0 20px rgba(0,0,0,.5)
+        }
+
+        #modalNudgeTools .btn-nudge {
+            width: 30px;
+            height: 30px;
+            font-size: 14px
+        }
+
+        .btn-single-dl {
+            position: absolute;
+            bottom: 35px;
+            right: 5px;
+            background: hsla(0,0%,100%,.9);
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-color);
+            border: 1px solid #ddd;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity .2s
+        }
+
+        .btn-single-dl:hover {
+            background: var(--primary-color);
+            color: #fff;
+            border-color: var(--primary-color)
+        }
+
+        .slice-card:hover .btn-single-dl {
+            opacity: 1
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 20px 0;
+            text-align: center;
+            color: var(--text-color);
+            font-size: .9rem;
+            background-color: var(--card-bg);
+            border-top: 1px solid rgba(0,0,0,.05)
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: hsla(0,0%,100%,.8);
+            z-index: 5;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px)
+        }
+
+
+        /* --- 针对“线条粗细”和“容差值”的强力样式覆盖 --- */
+
+        /* 1. 针对 Webkit 内核浏览器 (Chrome, Edge, Safari) */
+        #inputGridWeight::-webkit-slider-thumb,
+        #inputTolerance::-webkit-slider-thumb {
+            -webkit-appearance: none; /* 移除默认外观 */
+            appearance: none;
+            background-color: #555555 !important; /* 滑块圆点：黑色 */
+            border: 2px solid #555555 !important; /* 边框：黑色 */
+            box-shadow: none !important; /* 去掉阴影 */
+        }
+
+        #inputGridWeight::-webkit-slider-runnable-track,
+        #inputTolerance::-webkit-slider-runnable-track {
+            background-color: #d6d6d6 !important; /* 轨道底色：深灰色 */
+        }
+
+        /* 2. 针对 Firefox 浏览器 */
+        #inputGridWeight::-moz-range-thumb,
+        #inputTolerance::-moz-range-thumb {
+            background-color: #555555 !important;
+            border: none !important;
+        }
+
+        #inputGridWeight::-moz-range-track,
+        #inputTolerance::-moz-range-track {
+            background-color: #d6d6d6 !important;
+        }
+
+        /* 3. 针对 IE/Edge 旧版 */
+        #inputGridWeight::-ms-thumb,
+        #inputTolerance::-ms-thumb {
+            background-color: #555555 !important;
+        }
+
+        /* 4. 关键：处理点击时的光晕颜色（Focus Ring） */
+        /* 防止点击时出现原来的蓝色或粉色光晕，改为灰色光晕 */
+        #inputGridWeight:focus,
+        #inputTolerance:focus {
+            border-color: #555555 !important;
+            box-shadow: 0 0 0 0.25rem rgba(85, 85, 85, 0.25) !important;
+            background-image: none !important; /* 移除 Bootstrap 可能残留的背景图 */
+        }
+
+        /* 5. 再次强制使用 accent-color 以防万一（现代浏览器支持） */
+        #inputGridWeight,
+        #inputTolerance {
+            accent-color: #555555 !important;
+            color: #555555 !important;
+        }
+
+
+
+        /* =========================================
+                赛博朋克 (Cyber) 主题专属修复
+        ========================================= */
+
+        /* 1. 修复字体颜色看不清的问题 */
+        /* 强制将 "text-muted" (原本的灰色) 改为主题色 (青色)，并稍微降低透明度 */
+        [data-theme="cyber"] .text-muted {
+            color: var(--text-color) !important; 
+            opacity: 0.9;
+        }
+
+        /* 2. 修复大面积白色背景块的问题 */
+        /* 将 .bg-light (原本的白色) 改为深色半透明背景，并加上赛博风边框 */
+        [data-theme="cyber"] .bg-light {
+            background-color: rgba(0, 0, 0, 0.3) !important; /* 深黑色背景 */
+            border: 1px solid rgba(0, 255, 204, 0.2) !important; /* 青色微光边框 */
+            color: var(--text-color) !important;
+        }
+
+        /* 3. (可选) 优化输入框旁边的文字背景 (如 "行"、"列"、"宽"、"高") */
+        [data-theme="cyber"] .input-group-text {
+            background-color: rgba(0, 255, 204, 0.1) !important;
+            color: var(--text-color) !important;
+            border-color: rgba(0, 255, 204, 0.3) !important;
+        }
+
+        /* 4. (可选) 优化输入框本身的背景，避免太白 */
+        [data-theme="cyber"] .form-control, 
+        [data-theme="cyber"] .form-select {
+            background-color: rgba(0, 0, 0, 0.5) !important;
+            color: var(--text-color) !important;
+            border-color: rgba(0, 255, 204, 0.3) !important;
+        }
+        /* 修复输入框占位符颜色 */
+        [data-theme="cyber"] .form-control::placeholder {
+            color: rgba(0, 255, 204, 0.5) !important;
+        }
+
+
+        /* =========================================
+        手机端适配修复 (Mobile Responsive Fixes)
+        ========================================= */
+        @media (max-width: 768px) {
+
+            /* --- 1. 修复“切片结果”容器 --- */
+            #previewGrid {
+                /* 强制覆盖 JS 设置的固定列数 */
+                /* 手机端改为 2 列显示，这样图片够大且不会溢出 */
+                grid-template-columns: repeat(2, 1fr) !important; 
+                gap: 8px !important;
+            }
+
+            /* 调整卡片内边距，节省空间 */
+            .slice-card {
+                padding: 5px !important;
+            }
+
+            /* --- 2. 修复“切片预览与微调”弹窗底部 --- */
+            /* 将底部栏改为垂直排列，防止挤压 */
+            #slicePreviewModal .modal-footer {
+                flex-direction: column !important; 
+                height: auto !important;
+                padding: 15px 10px !important;
+                gap: 15px;
+            }
+
+            /* (左侧) 信息统计块：改为居中横向排列 */
+            #slicePreviewModal .modal-footer > div.text-start {
+                padding-left: 0 !important;
+                width: 100%;
+                text-align: center !important;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+                min-width: auto !important;
+            }
+            /* 让原本竖排的文字在一行显示 */
+            #slicePreviewModal .modal-footer > div.text-start > div {
+                display: inline-block;
+                margin-bottom: 0;
+            }
+
+            /* (中间) 缩放控件：取消绝对定位，让它流式排布 */
+            #slicePreviewModal .modal-footer > div.position-absolute {
+                position: static !important; /* 关键：取消绝对定位 */
+                transform: none !important;
+                margin: 0 !important;
+                width: 100%;
+                display: flex;
+                justify-content: center;
+            }
+
+            /* (右侧) 设置滑块：宽度占满并居中 */
+            #slicePreviewModal .modal-footer > div.d-flex.flex-column {
+                padding-right: 0 !important;
+                width: 100%;
+                align-items: center !important;
+                min-width: auto !important;
+            }
+
+            /* 调整具体设置行的对齐方式 */
+            #slicePreviewModal .modal-footer .d-flex.align-items-center.justify-content-end {
+                justify-content: center !important;
+                width: 100% !important;
+            }
+            
+            /* 增加滑块区域的点击面积 */
+            #slicePreviewModal .form-range {
+                width: 50% !important; /* 稍微加宽滑块 */
+            }
+            
+            /* 修复弹窗内图片容器的高度，避免手机上太高 */
+            #slicePreviewImgContainer {
+                height: 40vh !important; 
+            }
         }
 
     </style>
@@ -336,7 +986,790 @@
 <script src="../../assets/js/cropper.min.js"></script>
 <script src="../../assets/js/jszip.min.js"></script>
 <script src="../../assets/js/FileSaver.min.js"></script>
-<script src="photo-slicer-tool.min.js"></script>
+<script>
+const state = {
+    theme: localStorage.getItem("ps_theme") || "",
+    rows: parseInt(localStorage.getItem("ps_rows")) || 4,
+    cols: parseInt(localStorage.getItem("ps_cols")) || 6,
+    tolerance: parseInt(localStorage.getItem("ps_tolerance")) || 5,
+    cropper: null,
+    fileName: "slice",
+    baseSliceW: 0,
+    baseSliceH: 0,
+    sourceCanvas: null,
+    slicedImages: [],
+    bgContiguous: !0,
+    targetColor: {
+        r: 255,
+        g: 255,
+        b: 255
+    },
+    isPicking: !1,
+    activePreviewIdx: -1
+},
+// 移除了英文包，将中文文本保留为常量供JS动态调用
+TEXT = {
+    error_no_img: "请先上传一张图片哦！",
+    zip_generating: "正在打包...",
+    download_ready: "下载即将开始!",
+    msg_selected_dl: "下载选中",
+    msg_all_dl: "下载全部",
+    btn_download_zip: "打包下载"
+};
 
+function injectCustomDOM() {
+    $("#slicePreviewModal").remove();
+    $("body").append(`
+    <div class="modal fade" id="slicePreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 90vw;">
+            <div class="modal-content">
+                <!-- 头部 -->
+                <div class="modal-header py-2 bg-dark border-bottom border-secondary position-relative justify-content-center">
+                    <h5 class="modal-title fs-6 text-white w-100 text-center">切片预览与微调</h5>
+                    <button type="button" class="btn-close btn-close-white position-absolute end-0 me-3" data-bs-dismiss="modal"></button>
+                </div>
+                
+                <!-- 图片主体 -->
+                <div class="modal-body text-center p-0" style="background:#1a1a1a; position:relative; overflow:hidden;">
+                    <div id="slicePreviewImgContainer" class="d-flex align-items-center justify-content-center" 
+                         style="height: 50vh; background-image: linear-gradient(45deg, #333 25%, transparent 25%), linear-gradient(-45deg, #333 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #333 75%), linear-gradient(-45deg, transparent 75%, #333 75%); background-size: 20px 20px; overflow: hidden; cursor: grab;">
+                        <img id="slicePreviewImg" src="" style="max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 20px rgba(0,0,0,0.5); transform-origin: center center;">
+                    </div>
+                </div>
+                
+                <!-- 底部控制栏 -->
+                <div class="modal-footer py-2 bg-dark border-top border-secondary d-flex align-items-center justify-content-between position-relative" style="min-height: 80px;">
+                    
+                    <!-- 1. 左侧：详细信息 -->
+                    <div class="text-start d-flex flex-column justify-content-center ps-5" style="font-family: monospace; line-height: 1.6; min-width: 200px; z-index: 1;">
+                        <div><span class="text-white">原图: </span><span id="modalOrigDim" class="text-white-50 ms-2">-</span></div>
+                        <div><span class="text-white">输出: </span><span id="modalCurrDim" class="text-warning ms-2">-</span></div>
+                        <div><span class="text-white">预估: </span><span id="modalFileSize" class="text-info ms-2">-</span> <span class="text-white-50">KB</span></div>
+                    </div>
+                    
+                    <!-- 2. 中间：视图缩放 -->
+                    <div class="position-absolute top-50 start-50 translate-middle" style="z-index: 10;">
+                        <div class="input-group input-group-sm justify-content-center shadow-sm" style="width: 160px;">
+                            <button class="btn btn-outline-secondary text-light border-secondary" id="btnViewZoomOut" title="缩小视图"><i class="bi bi-dash-lg"></i></button>
+                            <input type="number" id="inputViewZoom" class="form-control bg-dark text-white border-secondary" 
+                                   style="text-align: center; padding-left: 5px; padding-right: 0;" 
+                                   value="100" min="10" max="500" step="10">
+                            <span class="input-group-text bg-dark text-white border-secondary border-start-0 px-2" style="font-size:0.8rem;">%</span>
+                            <button class="btn btn-outline-secondary text-light border-secondary" id="btnViewZoomIn" title="放大视图"><i class="bi bi-plus-lg"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- 3. 右侧：设置 -->
+                    <div class="d-flex flex-column align-items-end justify-content-center gap-2 pe-5" style="min-width: 200px; z-index: 1;">
+                        
+                        <!-- 容差行 -->
+                        <div class="d-flex align-items-center justify-content-end text-light small" style="width: 100%;">
+                            <label class="me-2 text-white text-end" style="width: 40px;">容差</label>
+                            <input type="range" class="form-range" id="modalToleranceInput" min="0" max="100" style="width: 100px;">
+                            <input type="number" id="modalToleranceVal" class="form-control form-control-sm bg-dark text-white border-secondary ms-2" 
+                                   style="width: 55px; text-align: center; padding: 0 4px;" value="5" min="0" max="100">
+                        </div>
+
+                        <!-- 连续行 -->
+                        <div class="d-flex align-items-center justify-content-end text-light small" style="width: 100%;">
+                            <label class="me-2 text-white text-end" style="width: 40px;" for="modalContiguousInput">连续</label>
+                            <div class="d-flex align-items-center justify-content-start" style="width: 100px;">
+                                <div class="form-check form-switch mb-0 ms-1" style="min-height: unset; padding-left: 2.5em;">
+                                    <input class="form-check-input cursor-pointer" type="checkbox" id="modalContiguousInput" 
+                                           style="margin-top: 0; cursor: pointer;">
+                                </div>
+                            </div>
+                            <span class="ms-2" style="width: 55px;"></span>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 底部微调按钮区 -->
+                <div class="row py-2 bg-dark border-top border-secondary g-0">
+                    <div class="col-12 d-flex justify-content-center">
+                        <div id="modalNudgeTools" class="d-flex gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`);
+    
+    const e = $("#bgSettingsPanel .col-12");
+    e.length && (e.empty(),
+    e.append('\n            <div class="d-flex align-items-center justify-content-between mb-2">\n                <div>\n                    <label class="form-label small text-muted mb-0">背景颜色</label>\n                    <div class="input-group input-group-sm mt-1" style="width: 140px;">\n                        <button class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center" type="button" id="btnPickColor">\n                            <div id="pickedColorPreview" style="width: 15px; height: 15px; background: #ffffff; border: 1px solid #999; margin-right: 8px;"></div>\n                            <i class="bi bi-eyedropper"></i>\n                        </button>\n                    </div>\n                    <input type="color" id="nativeColorInput" value="#ffffff" style="visibility: hidden; position: absolute;">\n                </div>\n                <div class="form-check form-switch">\n                    <input class="form-check-input" type="checkbox" id="checkBgContiguous" checked>\n                    <label class="form-check-label small" for="checkBgContiguous">仅连续区域</label>\n                </div>\n            </div>\n        '))
+}
+
+function initUI() {
+    $("#inputRows").val(state.rows);
+    $("#inputCols").val(state.cols);
+    $("#inputTolerance").val(state.tolerance);
+    $("#toleranceVal").val(state.tolerance); 
+    $("#bgSettingsPanel").toggle($("#checkRemoveBg").is(":checked"));
+    
+    const e = "#" + [state.targetColor.r, state.targetColor.g, state.targetColor.b]
+        .map(e => e.toString(16).padStart(2, "0")).join("");
+    $("#pickedColorPreview").css("background-color", e);
+    $("#nativeColorInput").val(e);
+}
+
+function changeTheme(e) {
+    state.theme = e,
+    localStorage.setItem("ps_theme", e),
+    $("body").attr("data-theme", e)
+}
+
+function bindEvents() {
+    $("#formatSelect").change(function() {
+        "image/webp" === $(this).val() ? $("#qualityBox").show() : $("#qualityBox").hide();
+    });
+
+    const e = $("#drop-zone");
+    e.on("dragover", t => {
+        t.preventDefault();
+        e.addClass("dragover");
+    });
+    e.on("dragleave", () => e.removeClass("dragover"));
+    e.on("drop", t => {
+        t.preventDefault();
+        e.removeClass("dragover");
+        t.originalEvent.dataTransfer.files.length && handleFile(t.originalEvent.dataTransfer.files[0]);
+    });
+
+    $("#fileInput").on("change", e => {
+        e.target.files.length && handleFile(e.target.files[0]);
+    });
+
+    $("#btnReupload").click(() => {
+        state.cropper && state.cropper.destroy();
+        $("#editorContainer").hide();
+        $("#drop-zone").show();
+        $("#btnReupload").hide();
+        $("#resultSection").hide();
+        $("#fileInput").val("");
+    });
+
+    document.addEventListener("paste", function(e) {
+        const t = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let a = 0; a < t.length; a++) {
+            const n = t[a];
+            if ("file" === n.kind && n.type.startsWith("image/")) {
+                handleFile(n.getAsFile());
+                e.preventDefault();
+                break;
+            }
+        }
+    });
+
+    $("#inputRows, #inputCols").on("input change", function() {
+        state.rows = Math.max(1, $("#inputRows").val());
+        state.cols = Math.max(1, $("#inputCols").val());
+        $("#gridDisplay").text(`${state.rows} x ${state.cols}`);
+        localStorage.setItem("ps_rows", state.rows);
+        localStorage.setItem("ps_cols", state.cols);
+        updateCropperGrid();
+        updateSquareDimDisplay();
+    });
+
+    $("#inputTolerance").on("input", function() {
+        state.tolerance = parseInt($(this).val());
+        $("#toleranceVal").val(state.tolerance);
+        localStorage.setItem("ps_tolerance", state.tolerance);
+    });
+
+    $("#toleranceVal").on("input change", function() {
+        let val = parseInt($(this).val());
+        if (isNaN(val)) val = 0;
+        if (val < 0) val = 0;
+        if (val > 100) val = 100;
+        state.tolerance = val;
+        $("#inputTolerance").val(val);
+        localStorage.setItem("ps_tolerance", state.tolerance);
+    });
+
+    $(document).on("change", "#checkBgContiguous", function() {
+        state.bgContiguous = $(this).is(":checked");
+    });
+
+    $("#checkRemoveBg").on("change", function() {
+        $("#bgSettingsPanel").toggle($(this).is(":checked"));
+    });
+
+    $(document).on("click", "#btnPickColor", function() {
+        $("#nativeColorInput").click();
+    });
+
+    $("#checkShowGrid").on("change", function() {
+        updateCropperGrid();
+    });
+
+    $("#inputGridWeight, #inputGridColor").on("input", updateCropperGrid);
+
+    $("#formatSelect").change(function() {
+        const e = $(this).val();
+        $("#qualityBox").toggle("image/webp" === e);
+    });
+
+    $("#btnSlice").click(generateSlices);
+    $("#btnSelectAll").click(toggleSelectAll);
+    $("#btnDownloadZip").click(downloadZip);
+
+    $(".preset-grid").click(function() {
+        const e = $(this).data("rows"),
+            t = $(this).data("cols");
+        $("#inputRows").val(e).trigger("change");
+        $("#inputCols").val(t).trigger("change");
+    });
+
+    $("#checkCustomSize").change(function() {
+        const e = $(this).is(":checked");
+        $("#customSizePanel").toggle(e);
+        e && $("#checkMakeSquare").prop("checked", !1);
+    });
+
+    $("#checkMakeSquare").change(function() {
+        $(this).is(":checked") && ($("#checkCustomSize").prop("checked", !1),
+            $("#customSizePanel").hide());
+    });
+
+    $("#slicePreviewImgContainer").on("wheel", function(e) {
+        if (e.preventDefault(), -1 === state.activePreviewIdx) return;
+        const t = e.originalEvent.deltaY < 0 ? .05 : -.05;
+        zoom(state.activePreviewIdx, t);
+    });
+
+    $(document).on("input change", "#nativeColorInput", function() {
+        const e = $(this).val();
+        $("#pickedColorPreview").css("background-color", e);
+        const t = parseInt(e.slice(1, 3), 16),
+            a = parseInt(e.slice(3, 5), 16),
+            n = parseInt(e.slice(5, 7), 16);
+        state.targetColor = { r: t, g: a, b: n };
+    });
+
+    // 缩放逻辑
+    let t = 1;
+    function a() {
+        $("#slicePreviewImg").css("transform", `scale(${t})`);
+        $("#inputViewZoom").val(Math.round(100 * t));
+    }
+
+    $(document).on("wheel", "#slicePreviewImgContainer", function(e) {
+        if (-1 === state.activePreviewIdx) return;
+        e.preventDefault();
+        const n = e.originalEvent.deltaY;
+        t = n < 0 ? Math.min(t + .1, 5) : Math.max(t - .1, .1);
+        a();
+    });
+
+    $(document).on("click", "#btnViewZoomIn", () => {
+        t = Math.min(t + .1, 5);
+        a();
+    });
+
+    $(document).on("click", "#btnViewZoomOut", () => {
+        t = Math.max(t - .1, .1);
+        a();
+    });
+
+    $(document).on("change input", "#inputViewZoom", function() {
+        let val = parseFloat($(this).val());
+        if (isNaN(val) || val < 10) val = 10;   
+        if (val > 500) val = 500;              
+        t = val / 100;
+        $("#slicePreviewImg").css("transform", `scale(${t})`);
+    });
+
+    $(document).on("input", "#modalToleranceInput", function() {
+        const e = $(this).val();
+        $("#modalToleranceVal").val(e);
+        state.tolerance = parseInt(e);
+        $("#inputTolerance").val(e);
+        $("#toleranceVal").val(e);
+        if (-1 !== state.activePreviewIdx) {
+            processSingleSlice(state.slicedImages[state.activePreviewIdx]);
+        }
+    });
+
+    $(document).on("input change", "#modalToleranceVal", function() {
+        let val = parseInt($(this).val());
+        if (isNaN(val)) val = 0;
+        if (val < 0) val = 0;
+        if (val > 100) val = 100;
+        $(this).val(val);
+        $("#modalToleranceInput").val(val);
+        state.tolerance = val;
+        $("#inputTolerance").val(val);
+        $("#toleranceVal").val(val);
+        if (-1 !== state.activePreviewIdx) {
+            processSingleSlice(state.slicedImages[state.activePreviewIdx]);
+        }
+    });
+
+    $(document).on("change", "#modalContiguousInput", function() {
+        const e = $(this).is(":checked");
+        state.bgContiguous = e;
+        $("#checkBgContiguous").prop("checked", e);
+        -1 !== state.activePreviewIdx && processSingleSlice(state.slicedImages[state.activePreviewIdx]);
+    });
+}
+
+function handleFile(e) {
+    if (!e.type.startsWith("image"))
+        return alert("图片格式错误");
+    state.fileName = e.name.replace(/\.[^/.]+$/, "");
+    const t = new FileReader;
+    t.onload = e => {
+        $("#image").attr("src", e.target.result),
+        $("#drop-zone").hide(),
+        $("#editorContainer").show(),
+        $("#btnReupload").show(),
+        state.cropper && state.cropper.destroy(),
+        state.cropper = new Cropper(document.getElementById("image"),{
+            viewMode: 1,
+            autoCropArea: .95,
+            guides: !1,
+            ready: () => {
+                updateCropperGrid(),
+                updateSquareDimDisplay()
+            }
+            ,
+            cropend: () => {
+                updateCropperGrid(),
+                updateSquareDimDisplay()
+            }
+        })
+    }
+    ,
+    t.readAsDataURL(e)
+}
+
+function updateCropperGrid() {
+    if (!state.cropper)
+        return;
+    const e = $(".cropper-view-box");
+    if (0 === e.length)
+        return;
+    const t = $("#checkShowGrid").is(":checked")
+      , a = $("#inputGridColor").val()
+      , n = parseInt($("#inputGridWeight").val()) || 1;
+    $("#previewGrid").css({
+        display: "grid",
+        "grid-template-columns": `repeat(${state.cols}, 1fr)`,
+        gap: "10px"
+    }),
+    $("#previewGrid > .col").css({
+        width: "auto",
+        flex: "none"
+    }),
+    t ? (e.addClass("show-grid"),
+    e.css({
+        "--grid-w": 100 / state.cols + "%",
+        "--grid-h": 100 / state.rows + "%",
+        "--line-w": n + "px",
+        "--c": a
+    })) : e.removeClass("show-grid")
+}
+
+function updateSquareDimDisplay() {
+    if (state.cropper && state.cropper.ready)
+        try {
+            const e = state.cropper.getCropBoxData()
+              , t = state.cropper.getCanvasData();
+            if (!e || 0 === e.width || 0 === e.height)
+                return void $("#squareDimDisplay").text("N/A");
+            const a = document.getElementById("image").naturalWidth / t.width
+              , n = e.width * a
+              , o = e.height * a
+              , s = Math.round(n / state.cols)
+              , i = Math.round(o / state.rows);
+            isNaN(s) || s <= 0 || isNaN(i) || i <= 0 ? $("#squareDimDisplay").text("N/A") : $("#squareDimDisplay").text(`${s} x ${i} px`)
+        } catch (e) {
+            console.error("Error updating dimension display:", e),
+            $("#squareDimDisplay").text("N/A")
+        }
+    else
+        $("#squareDimDisplay").text("N/A")
+}
+
+async function generateSlices() {
+    if (!state.cropper)
+        return alert(TEXT.error_no_img);
+    $("#loadingOverlay").fadeIn(),
+    setTimeout(async () => {
+        try {
+            if (state.sourceCanvas = state.cropper.getCroppedCanvas(),
+            !state.sourceCanvas)
+                throw new Error("Canvas Error");
+            const e = state.sourceCanvas.width
+              , t = state.sourceCanvas.height;
+            state.baseSliceW = e / state.cols,
+            state.baseSliceH = t / state.rows,
+            state.tolerance = parseInt($("#inputTolerance").val()) || 30,
+            state.slicedImages = [];
+            for (let e = 0; e < state.rows; e++)
+                for (let t = 0; t < state.cols; t++) {
+                    const a = e * state.cols + t
+                      , n = {
+                        id: a,
+                        r: e,
+                        c: t,
+                        offsetX: 0,
+                        offsetY: 0,
+                        scale: 1,
+                        selected: !1,
+                        name: `${state.fileName}_${pad(a + 1)}`,
+                        w: state.baseSliceW,
+                        h: state.baseSliceH
+                    };
+                    await processSingleSlice(n),
+                    state.slicedImages.push(n)
+                }
+            renderPreview()
+        } catch (e) {
+            console.error(e),
+            alert("处理出错，请刷新重试")
+        } finally {
+            $("#loadingOverlay").fadeOut()
+        }
+    }
+    , 100)
+}
+
+async function processSingleSlice(e) {
+    const t = state.baseSliceW
+      , a = state.baseSliceH;
+    let n = document.createElement("canvas");
+    n.width = t,
+    n.height = a;
+    const o = n.getContext("2d");
+    o.save(),
+    o.translate(t / 2 + e.offsetX, a / 2 + e.offsetY),
+    o.scale(e.scale, e.scale),
+    o.translate(-t / 2, -a / 2);
+    const s = e.c * t
+      , i = e.r * a;
+    if (o.drawImage(state.sourceCanvas, s, i, t, a, 0, 0, t, a),
+    o.restore(),
+    $("#checkRemoveBg").is(":checked")) {
+        parseInt($("#inputTolerance").val());
+        state.bgContiguous ? floodFillRemoveBg(n, state.targetColor, state.tolerance) : globalRemoveBg(n, state.targetColor, state.tolerance)
+    }
+    const l = $("#checkMakeSquare").is(":checked");
+    if ($("#checkCustomSize").is(":checked")) {
+        const e = parseInt($("#outputWidth").val()) || t
+          , o = parseInt($("#outputHeight").val()) || a
+          , s = document.createElement("canvas");
+        s.width = e,
+        s.height = o,
+        s.getContext("2d").drawImage(n, 0, 0, e, o),
+        n = s
+    } else if (l) {
+        const e = Math.ceil(Math.max(t, a))
+          , o = document.createElement("canvas");
+        o.width = e,
+        o.height = e;
+        const s = (e - t) / 2
+          , i = (e - a) / 2;
+        o.getContext("2d").drawImage(n, s, i),
+        n = o
+    }
+    return new Promise(t => {
+        e.url && URL.revokeObjectURL(e.url);
+        const a = $("#formatSelect").val()
+          , o = parseFloat($("#qualityInput").val()) || .92;
+        n.toBlob(o => {
+            if (e.blob = o,
+            e.url = URL.createObjectURL(o),
+            e.ext = a.includes("webp") ? ".webp" : ".png",
+            state.activePreviewIdx === e.id) {
+                $("#slicePreviewImg").attr("src", e.url),
+                $("#modalOrigDim").text(`${Math.round(state.baseSliceW)} x ${Math.round(state.baseSliceH)}`),
+                $("#modalCurrDim").text(`${n.width} x ${n.height}`);
+                const t = (o.size / 1024).toFixed(1);
+                $("#modalFileSize").text(t)
+            }
+            t()
+        }
+        , a, o)
+    }
+    )
+}
+
+function globalRemoveBg(e, t, a) {
+    const n = e.getContext("2d")
+      , o = e.width
+      , s = e.height;
+    if (0 === o || 0 === s)
+        return;
+    const i = n.getImageData(0, 0, o, s)
+      , l = i.data
+      , c = a / 100 * 441.67
+      , r = c * c
+      , d = t.r
+      , u = t.g
+      , g = t.b;
+    for (let e = 0; e < l.length; e += 4) {
+        if (0 === l[e + 3])
+            continue;
+        const t = l[e]
+          , a = l[e + 1]
+          , n = l[e + 2];
+        (t - d) * (t - d) + (a - u) * (a - u) + (n - g) * (n - g) <= r && (l[e + 3] = 0)
+    }
+    n.putImageData(i, 0, 0)
+}
+
+function floodFillRemoveBg(e, t, a) {
+    const n = e.getContext("2d")
+      , o = e.width
+      , s = e.height;
+    if (0 === o || 0 === s)
+        return;
+    const i = n.getImageData(0, 0, o, s)
+      , l = i.data
+      , c = new Uint8Array(o * s)
+      , r = []
+      , d = a / 100 * 441.67
+      , u = d * d
+      , g = t.r
+      , p = t.g
+      , m = t.b
+      , h = (e, t) => {
+        if (e < 0 || e >= o || t < 0 || t >= s)
+            return;
+        const a = t * o + e;
+        c[a] || ((e => {
+            const t = 4 * e
+              , a = l[t]
+              , n = l[t + 1]
+              , o = l[t + 2];
+            return (a - g) * (a - g) + (n - p) * (n - p) + (o - m) * (o - m) <= u
+        }
+        )(a) ? (l[4 * a + 3] = 0,
+        c[a] = 1,
+        r.push(a)) : c[a] = 1)
+    }
+    ;
+    for (let e = 0; e < o; e++)
+        h(e, 0),
+        h(e, s - 1);
+    for (let e = 1; e < s - 1; e++)
+        h(0, e),
+        h(o - 1, e);
+    for (; r.length > 0; ) {
+        const e = r.pop()
+          , t = e % o
+          , a = Math.floor(e / o);
+        h(t + 1, a),
+        h(t - 1, a),
+        h(t, a + 1),
+        h(t, a - 1)
+    }
+    n.putImageData(i, 0, 0)
+}
+
+function renderPreview() {
+    const e = $("#previewGrid");
+    e.empty(),
+    $("#resultCount").text(state.slicedImages.length),
+    $("#resultSection").slideDown(),
+    state.slicedImages.forEach( (t, a) => {
+        const n = $(`
+            <div class="col">
+                <div class="slice-card ${t.selected ? "selected" : ""}" data-idx="${a}" onclick="toggleSelect(${a})">
+                    <div class="check-mark"><i class="bi bi-check"></i></div>
+                    
+                    <div class="nudge-tools mt-1" onclick="event.stopPropagation()" style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                        <div class="d-flex align-items-center">
+                            <button class="btn-preview-slice" onclick="openPreviewModal(${a})" title="预览与微调"><i class="bi bi-eye"></i></button>
+                            
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn-nudge" onclick="zoom(${a}, -0.05)" title="缩小切片内容"><i class="bi bi-dash-lg"></i></button>
+                                <button class="btn-nudge" onclick="nudge(${a}, -2, 0)" title="左移">←</button>
+                                <button class="btn-nudge" onclick="nudge(${a}, 0, -2)" title="上移">↑</button>
+                                <button class="btn-nudge" onclick="smartCenter(${a})" title="自动居中" style="color:var(--primary-color)"><i class="bi bi-bullseye"></i></button>
+                                <button class="btn-nudge" onclick="nudge(${a}, 0, 2)" title="下移">↓</button>
+                                <button class="btn-nudge" onclick="nudge(${a}, 2, 0)" title="右移">→</button>
+                                <button class="btn-nudge" onclick="zoom(${a}, 0.05)" title="放大切片内容"><i class="bi bi-plus-lg"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slice-img-wrapper"><img src="${t.url}"></div>
+                    <button class="btn-single-dl" onclick="downloadSingle(event, ${a})"><i class="bi bi-download"></i></button>
+                    <input type="text" class="form-control form-control-sm name-input" value="${t.name}" onclick="event.stopPropagation()">
+                </div>
+            </div>`);
+        e.append(n)
+    }
+    ),
+    $(".name-input").on("change", function() {
+        const e = $(this).closest(".slice-card").data("idx");
+        state.slicedImages[e].name = $(this).val()
+    }),
+    $("html, body").animate({
+        scrollTop: $("#resultSection").offset().top - 80
+    }, 500),
+    updateDownloadBtnText()
+}
+
+function toggleSelect(e) {
+    const t = state.slicedImages[e];
+    t.selected = !t.selected;
+    const a = $(`.slice-card[data-idx="${e}"]`);
+    t.selected ? a.addClass("selected") : a.removeClass("selected"),
+    updateDownloadBtnText()
+}
+
+function toggleSelectAll() {
+    const e = state.slicedImages.every(e => e.selected);
+    state.slicedImages.forEach( (t, a) => {
+        t.selected = !e;
+        const n = $(`.slice-card[data-idx="${a}"]`);
+        t.selected ? n.addClass("selected") : n.removeClass("selected")
+    }
+    ),
+    updateDownloadBtnText()
+}
+
+function updateDownloadBtnText() {
+    const e = state.slicedImages.filter(e => e.selected).length
+      , a = $("#btnDownloadZip span");
+    e > 0 ? a.text(`${TEXT.msg_selected_dl} (${e})`) : a.text(TEXT.btn_download_zip)
+}
+
+function downloadSingle(e, t) {
+    e.stopPropagation();
+    const a = state.slicedImages[t]
+      , n = $(`.slice-card[data-idx="${t}"] .name-input`).val();
+    saveAs(a.blob, n + a.ext)
+}
+
+function downloadZip() {
+    if (0 === state.slicedImages.length)
+        return;
+    $(".name-input").each(function() {
+        const e = $(this).closest(".slice-card").data("idx");
+        state.slicedImages[e].name = $(this).val()
+    });
+    const e = new JSZip
+      , t = e.folder("stickers")
+      , a = state.slicedImages.filter(e => e.selected);
+    (a.length > 0 ? a : state.slicedImages).forEach(e => {
+        let a = e.name;
+        a.toLowerCase().endsWith(e.ext) || (a += e.ext),
+        t.file(a, e.blob)
+    }
+    );
+    const n = $("#btnDownloadZip")
+      , o = n.html();
+    n.prop("disabled", !0).html('<i class="bi bi-hourglass-split"></i> ' + TEXT.zip_generating),
+    e.generateAsync({
+        type: "blob"
+    }).then(function(e) {
+        saveAs(e, `${state.fileName}_pack.zip`),
+        n.prop("disabled", !1).html(o)
+    })
+}
+
+function pad(e) {
+    return e.toString().padStart(2, "0")
+}
+
+$(document).ready(function() {
+    injectCustomDOM(),
+    initUI(),
+    bindEvents(),
+    changeTheme(state.theme)
+}),
+window.nudge = async function(e, t, a) {
+    const n = state.slicedImages[e];
+    n.offsetX += t,
+    n.offsetY += a,
+    $(`.slice-card[data-idx="${e}"] img`).css("opacity", .5),
+    await processSingleSlice(n),
+    $(`.slice-card[data-idx="${e}"] img`).attr("src", n.url).css("opacity", 1)
+}
+,
+window.smartCenter = async function(e) {
+    const t = state.slicedImages[e]
+      , a = state.baseSliceW
+      , n = state.baseSliceH
+      , o = document.createElement("canvas");
+    o.width = a,
+    o.height = n;
+    const s = o.getContext("2d")
+      , i = t.c * a
+      , l = t.r * n;
+    s.drawImage(state.sourceCanvas, i, l, a, n, 0, 0, a, n),
+    $("#checkRemoveBg").is(":checked") && floodFillRemoveBg(o, state.targetColor, state.tolerance);
+    const c = s.getImageData(0, 0, a, n).data;
+    let r = a
+      , d = n
+      , u = 0
+      , g = 0
+      , p = !1;
+    for (let e = 0; e < n; e++)
+        for (let t = 0; t < a; t++) {
+            c[4 * (e * a + t) + 3] > 0 && (t < r && (r = t),
+            t > u && (u = t),
+            e < d && (d = e),
+            e > g && (g = e),
+            p = !0)
+        }
+    if (!p)
+        return;
+    const m = r + (u - r) / 2
+      , h = d + (g - d) / 2
+      , b = a / 2
+      , v = n / 2;
+    t.offsetX = b - m,
+    t.offsetY = v - h,
+    $(`.slice-card[data-idx="${e}"] img`).css("opacity", .5),
+    await processSingleSlice(t),
+    $(`.slice-card[data-idx="${e}"] img`).attr("src", t.url).css("opacity", 1)
+}
+,
+window.zoom = async function(e, t) {
+    const a = state.slicedImages[e];
+    a.scale += t,
+    a.scale < .1 && (a.scale = .1),
+    a.scale > 3 && (a.scale = 3),
+    $(`.slice-card[data-idx="${e}"] img`).css("opacity", .5),
+    await processSingleSlice(a),
+    $(`.slice-card[data-idx="${e}"] img`).attr("src", a.url).css("opacity", 1)
+}
+,
+window.openPreviewModal = function(e) {
+    state.activePreviewIdx = e;
+    const t = state.slicedImages[e];
+    viewScale = 1,
+    $("#slicePreviewImg").attr("src", t.url).css("transform", `scale(${viewScale})`),
+    $("#inputViewZoom").val(100),
+    $("#modalToleranceInput").val(state.tolerance),
+    $("#modalToleranceVal").val(state.tolerance),
+    $("#modalContiguousInput").prop("checked", state.bgContiguous),
+    processSingleSlice(t);
+    const a = `
+        <div class="btn-group shadow" role="group">
+            <button class="btn btn-dark btn-sm border-secondary" onclick="zoom(${e}, -0.05)" title="缩小切片内容"><i class="bi bi-dash"></i></button>
+            <button class="btn btn-dark btn-sm border-secondary" onclick="nudge(${e}, -2, 0)" title="左移">←</button>
+            <button class="btn btn-dark btn-sm border-secondary" onclick="nudge(${e}, 0, -2)" title="上移">↑</button>
+            <button class="btn btn-primary btn-sm border-secondary" onclick="smartCenter(${e})" title="自动居中"><i class="bi bi-bullseye"></i></button>
+            <button class="btn btn-dark btn-sm border-secondary" onclick="nudge(${e}, 0, 2)" title="下移">↓</button>
+            <button class="btn btn-dark btn-sm border-secondary" onclick="nudge(${e}, 2, 0)" title="右移">→</button>
+            <button class="btn btn-dark btn-sm border-secondary" onclick="zoom(${e}, 0.05)" title="放大切片内容"><i class="bi bi-plus"></i></button>
+        </div>
+    `;
+    $("#modalNudgeTools").html(a);
+    new bootstrap.Modal(document.getElementById("slicePreviewModal")).show(),
+    $("#slicePreviewModal").on("hidden.bs.modal", function() {
+        state.activePreviewIdx = -1
+    })
+}
+;
+
+</script>
 </body>
 </html>
